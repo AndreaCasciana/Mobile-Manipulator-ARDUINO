@@ -207,7 +207,6 @@ void robotArmDeactivation()
     pwm.sleep();
     digitalWrite(33, LOW);
     isArmOn = false;
-    //delay(3000);
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Arm deactivated!");
@@ -229,7 +228,6 @@ void robotArmRestPosition(){
     pwm.setPWM(2, 0, 550);
     delay(50);
     pwm.setPWM(3, 0, 650);
-    delay(200);
 }
 
 void robotArmTurnLeft()
@@ -243,7 +241,6 @@ void robotArmTurnLeft()
       delay(1); // Adjust delay for desired speed
     }
     //pwm.setPWM(0, 0, 100);
-    delay(500);
 }
 
 void robotArmTurn(int angle)
@@ -267,7 +264,6 @@ void robotArmTurn(int angle)
 
     Serial.println("Arm rotated to desired position");
     //pwm.setPWM(0, 0, angle);
-    delay(500);
 }
 
 void robotArmGraduallyTurn(int angle) {
@@ -334,7 +330,6 @@ void robotArmTurnRight()
       delay(1); // Adjust delay for desired speed
     }
     //pwm.setPWM(0, 0, 600);
-    delay(500);
 }
 
 void robotArmCenteredPosition()
@@ -355,7 +350,6 @@ void robotArmCenteredPosition()
       }
     }
     //pwm.setPWM(0, 0, 350); // turn center
-    delay(500);
 }
 
 void triggerAlarm(int dist)
@@ -419,7 +413,6 @@ void robotArmMoveUp()
     pwm.setPWM(1, 0, 150); // go up
     delay(400);
     pwm.setPWM(2, 0, 500); // go up
-    delay(800);
 }
 
 void robotArmMoveDown()
@@ -431,7 +424,6 @@ void robotArmMoveDown()
     pwm.setPWM(2, 0, 650); // go down
     delay(50);
     pwm.setPWM(1, 0, 345); // go down
-    delay(800);
 }
 
 void robotEndEffectorOpen()
@@ -441,7 +433,6 @@ void robotEndEffectorOpen()
     lcd.print("Opening EOAT...");
     Serial.println("Opening end effector...");
     pwm.setPWM(5, 0, 100); // open end effector
-    delay(200);
 }
 
 void robotEndEffectorClose()
@@ -451,7 +442,6 @@ void robotEndEffectorClose()
     lcd.print("Closing EOAT...");
     Serial.println("Closing end effector...");
     pwm.setPWM(5, 0, 250); // grab
-    delay(200);
 }
 
 void robotEndEffectorRotate()
@@ -463,12 +453,10 @@ void robotEndEffectorRotate()
     if (!isEndEffectorRotated)
     {
         pwm.setPWM(4, 0, 340);
-        delay(500);
     }
     else
     {
         pwm.setPWM(4, 0, 100);
-        delay(500);
     }
     isEndEffectorRotated = !isEndEffectorRotated;
 }
@@ -485,6 +473,7 @@ void toggleRobotArm(){
 void robotStartUp()
 {
     Serial1.begin(4800);
+    Serial1.setTimeout(10);
     Serial.begin(9600);
     pinMode(33, OUTPUT);
     analogWrite(6, contrast);

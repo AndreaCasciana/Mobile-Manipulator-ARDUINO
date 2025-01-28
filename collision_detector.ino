@@ -106,42 +106,42 @@ void loop()
 {
 
   if(Serial1.available()){
-    String received = Serial1.readString();
+    String received = Serial1.readStringUntil('\n');
     received.trim();
-    if(received == "laserToggle"){
+    if(received == "0"){
         controlRobotLaser();
-    } else if (received == "o") {
+    } else if (received == "1") {
         robotEndEffectorOpen();
-    } else if (received == "c") {
+    } else if (received == "2") {
         robotEndEffectorClose();
-    } else if (received == "rotateEndEffector") {
+    } else if (received == "3") {
         robotEndEffectorRotate();
-    } else if (received == "armUp") {
+    } else if (received == "4") {
         robotArmMoveUp();
-    } else if (received == "armDown") {
+    } else if (received == "5") {
         robotArmMoveDown();
-    } else if (received == "armLeft") {
+    } else if (received == "6") {
         robotArmTurnLeft();
-    } else if (received == "armRight") {
+    } else if (received == "7") {
         robotArmTurnRight();
-    } else if (received == "armCentered") {
+    } else if (received == "8") {
         robotArmCenteredPosition();
-    } else if (received == "armResting") {
+    } else if (received == "9") {
         toggleRobotArm();
-    } else if (received == "armDemoMode") {
+    } else if (received == "10") {
         pickAndMoveRight();
-    } else if (received == "armPowerToggle") {
+    } else if (received == "11") {
       if (isArmOn){
         robotArmDeactivation();
       } else {
         robotArmActivation();
       }
-    } else if (received.startsWith("rotateArm")) {
-        int angle = received.substring(10).toInt();
+    } else if (received.startsWith("rth")) {
+        int angle = received.substring(3).toInt();
         //robotArmTurn(angle);
         robotArmGraduallyTurn(angle);
-    } else if (received.startsWith("moveArmVertically")) {
-        int value = received.substring(17).toInt();
+    } else if (received.startsWith("rtv")) {
+        int value = received.substring(3).toInt();
         Serial.println("Attempted to move the arm vertically using the slider");
         //robotArmMoveVertically(angle);
     }
