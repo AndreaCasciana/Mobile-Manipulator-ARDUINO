@@ -23,6 +23,9 @@ int lowSpeed = 3; // Adjust for desired low speed
 int midSpeed = 2; // Adjust for desired mid speed
 int highSpeed = 1; // Adjust for desired high speed
 int servoPos0 = 350;
+int redPin= 53;
+int greenPin = 51;
+int bluePin = 49;
 
 void robotArmInitialization()
 {
@@ -90,7 +93,6 @@ void robotMovementOn()
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Robot moving...");
-    Serial.println("Robot moving forward...");
     analogWrite(52, 130);
     analogWrite(42, 255);
     digitalWrite(50, LOW);
@@ -104,7 +106,6 @@ void robotMovementRight()
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Robot moving...");
-    Serial.println("Robot turning right...");
     analogWrite(52, 255);
     analogWrite(42, 255);
     digitalWrite(50, LOW);
@@ -118,7 +119,6 @@ void robotMovementLeft()
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Robot moving...");
-    Serial.println("Robot turning left...");
     analogWrite(52, 255);
     analogWrite(42, 255);
     digitalWrite(50, HIGH);
@@ -132,7 +132,6 @@ void robotMovementBackward()
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Backward moving...");
-    Serial.println("Robot moving backward...");
     analogWrite(52, 150);
     analogWrite(42, 255);
     digitalWrite(50, HIGH);
@@ -143,19 +142,11 @@ void robotMovementBackward()
 
 void robotMovementOff()
 {
+    analogWrite(52, 0);
+    analogWrite(42, 0);
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Robot stopped...");
-    Serial.println("Robot stopped...");
-    analogWrite(52, 0);
-    analogWrite(42, 0);
-    /*
-    digitalWrite(50, LOW);
-    digitalWrite(48, LOW);
-    digitalWrite(46, LOW);
-    digitalWrite(44, LOW);
-    */
-    //delay(1000);
 }
 
 void robotArmActivation()
@@ -470,10 +461,16 @@ void toggleRobotArm(){
     isArmResting = !isArmResting;
 }
 
+void setRearLightsColor(int redValue, int greenValue,  int blueValue) {
+  analogWrite(redPin, redValue);
+  analogWrite(greenPin,  greenValue);
+  analogWrite(bluePin, blueValue);
+}
+
 void robotStartUp()
 {
     Serial1.begin(4800);
-    Serial1.setTimeout(10);
+    Serial1.setTimeout(5);
     Serial.begin(9600);
     pinMode(33, OUTPUT);
     analogWrite(6, contrast);
@@ -487,6 +484,9 @@ void robotStartUp()
     pinMode(44, OUTPUT);
     pinMode(52, OUTPUT);
     pinMode(42, OUTPUT);
+    pinMode(redPin,  OUTPUT);              
+    pinMode(greenPin, OUTPUT);
+    pinMode(bluePin, OUTPUT);
     digitalWrite(50, LOW);
     digitalWrite(48, LOW);
     digitalWrite(46, LOW);
@@ -501,5 +501,6 @@ void robotStartUp()
     lcd.print("ARDM2 ROBOT");
     lcd.setCursor(0, 2);
     lcd.print("IS OPERATIONAL.");
+    setRearLightsColor(0, 0, 255);
     Serial.println("Robot fully operational...");
 }
