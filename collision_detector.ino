@@ -110,6 +110,8 @@ void loop()
     received.trim();
     if(received == "0"){
         controlRobotLaser();
+    } else if (received == "20") {
+        robotMovementOff();
     } else if (received == "1") {
         robotEndEffectorOpen();
     } else if (received == "2") {
@@ -144,6 +146,14 @@ void loop()
         int value = received.substring(3).toInt();
         Serial.println("Attempted to move the arm vertically using the slider");
         //robotArmMoveVertically(angle);
+    } else if (received == "21") {
+        robotMovementOn();
+    } else if (received == "22") {
+        robotMovementBackward();
+    } else if (received == "23") {
+        robotMovementLeft();
+    } else if (received == "24") {
+        robotMovementRight();
     }
   }
 
@@ -155,10 +165,10 @@ void loop()
 
   dist = sr04.Distance();
 
-  if (dist < 20){
-    Serial.print("OBSTACLE DETECTED! (");
-    Serial.print(dist);
-    Serial.println("cm)");
+  if (dist < 15){
+    //Serial.print("OBSTACLE DETECTED! (");
+    //Serial.print(dist);
+    //Serial.println("cm)");
     triggerAlarm(dist);
   }
 }
