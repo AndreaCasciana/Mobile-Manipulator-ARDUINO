@@ -22,10 +22,12 @@ int servoSpeed = 1;
 int lowSpeed = 3; // Adjust for desired low speed
 int midSpeed = 2; // Adjust for desired mid speed
 int highSpeed = 1; // Adjust for desired high speed
-int servoPos0 = 350;
+int servoPos0 = 370;
 int redPin= 53;
 int greenPin = 51;
 int bluePin = 49;
+bool stoppedFront = false;
+bool stoppedBack = false;
 
 void robotArmInitialization()
 {
@@ -33,8 +35,8 @@ void robotArmInitialization()
     lcd.setCursor(0, 0);
     lcd.print("Initial position");
     Serial.println("Initial position");
-    pwm.setPWM(0, 0, 350);
-    servoPos0 = 350;
+    pwm.setPWM(0, 0, 370);
+    servoPos0 = 370;
     delay(1000);
     pwm.setPWM(2, 0, 500);
     delay(50);
@@ -47,6 +49,12 @@ void robotArmInitialization()
     pwm.setPWM(5, 0, 200);
 }
 
+void setRearLightsColor(int redValue, int greenValue,  int blueValue) {
+  analogWrite(redPin, redValue);
+  analogWrite(greenPin,  greenValue);
+  analogWrite(bluePin, blueValue);
+}
+
 void pickAndMoveRight()
 {
     lcd.clear();
@@ -55,7 +63,7 @@ void pickAndMoveRight()
     Serial.println("Robot arm demo...");
     pwm.wakeup();
     delay(100);
-    pwm.setPWM(0, 0, 350); // turn center
+    pwm.setPWM(0, 0, 370); // turn center
     delay(1000);
     pwm.setPWM(5, 0, 100); // open end effector
     delay(600);
@@ -90,15 +98,19 @@ void pickAndMoveRight()
 
 void robotMovementOn()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Robot moving...");
-    analogWrite(52, 130);
-    analogWrite(42, 255);
-    digitalWrite(50, LOW);
-    digitalWrite(48, HIGH);
-    digitalWrite(46, LOW);
-    digitalWrite(44, HIGH);
+    if(!stoppedFront){
+      stoppedBack = false;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Robot moving...");
+      analogWrite(52, 130);
+      analogWrite(42, 180);
+      digitalWrite(50, LOW);
+      digitalWrite(48, HIGH);
+      digitalWrite(46, LOW);
+      digitalWrite(44, HIGH);
+      setRearLightsColor(255, 0, 0);
+    }
 }
 
 void robotMovementRight()
@@ -129,21 +141,26 @@ void robotMovementLeft()
 
 void robotMovementBackward()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Backward moving...");
-    analogWrite(52, 150);
-    analogWrite(42, 255);
-    digitalWrite(50, HIGH);
-    digitalWrite(48, LOW);
-    digitalWrite(46, HIGH);
-    digitalWrite(44, LOW);
+    if(!stoppedBack){
+      stoppedFront = false;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Backward moving...");
+      analogWrite(52, 180);
+      analogWrite(42, 130);
+      digitalWrite(50, HIGH);
+      digitalWrite(48, LOW);
+      digitalWrite(46, HIGH);
+      digitalWrite(44, LOW);
+      setRearLightsColor(244, 255, 168);
+    }
 }
 
 void robotMovementOff()
 {
     analogWrite(52, 0);
     analogWrite(42, 0);
+    setRearLightsColor(0, 0, 255);
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Robot stopped...");
@@ -157,8 +174,8 @@ void robotArmActivation()
     Serial.println("Arm activation...");
     pwm.wakeup();
     delay(100);
-    pwm.setPWM(0, 0, 350);
-    servoPos0 = 350;
+    pwm.setPWM(0, 0, 370);
+    servoPos0 = 370;
     delay(1000);
     pwm.setPWM(2, 0, 500);
     delay(50);
@@ -184,8 +201,8 @@ void robotArmDeactivation()
     lcd.setCursor(0, 0);
     lcd.print("Arm deactivation...");
     Serial.println("Arm deactivation...");
-    pwm.setPWM(0, 0, 350);
-    servoPos0 = 350;
+    pwm.setPWM(0, 0, 370);
+    servoPos0 = 370;
     delay(800);
     pwm.setPWM(4, 0, 340);
     delay(1000);
@@ -209,8 +226,8 @@ void robotArmRestPosition(){
     lcd.setCursor(0, 0);
     lcd.print("Arm resting...");
     Serial.println("Arm resting...");
-    pwm.setPWM(0, 0, 350);
-    servoPos0 = 350;
+    pwm.setPWM(0, 0, 370);
+    servoPos0 = 370;
     delay(800);
     pwm.setPWM(4, 0, 340);
     delay(1000);
@@ -231,7 +248,6 @@ void robotArmTurnLeft()
       pwm.setPWM(0, 0, servoPos0);
       delay(1); // Adjust delay for desired speed
     }
-    //pwm.setPWM(0, 0, 100);
 }
 
 void robotArmTurn(int angle)
@@ -320,7 +336,6 @@ void robotArmTurnRight()
       pwm.setPWM(0, 0, servoPos0);
       delay(1); // Adjust delay for desired speed
     }
-    //pwm.setPWM(0, 0, 600);
 }
 
 void robotArmCenteredPosition()
@@ -329,29 +344,40 @@ void robotArmCenteredPosition()
     lcd.setCursor(0, 0);
     lcd.print("Centering arm...");
     Serial.println("Centering arm...");
-    if(350 > servoPos0) {
-      for (servoPos0; servoPos0 <= 350; servoPos0 += servoSpeed) {
+    if(370 > servoPos0) {
+      for (servoPos0; servoPos0 <= 370; servoPos0 += servoSpeed) {
         pwm.setPWM(0, 0, servoPos0);
         delay(1); // Adjust delay for desired speed
       }
     } else{
-      for (servoPos0; servoPos0 >= 350; servoPos0 -= servoSpeed) {
+      for (servoPos0; servoPos0 >= 370; servoPos0 -= servoSpeed) {
         pwm.setPWM(0, 0, servoPos0);
         delay(1); // Adjust delay for desired speed
       }
     }
-    //pwm.setPWM(0, 0, 350); // turn center
 }
 
 void triggerAlarm(int dist)
 {
-    analogWrite(52, 0);
-    analogWrite(42, 0);
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("WARNING!");
-    lcd.setCursor(0, 1);
-    lcd.print("OBJECT DETECTED");
+
+    if(!stoppedFront){
+      stoppedFront = true;
+      robotMovementOff();
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("WARNING!");
+      lcd.setCursor(0, 1);
+      lcd.print("OBJECT DETECTED");
+      setRearLightsColor(255, 255, 255);
+      delay(300);
+      setRearLightsColor(0, 0, 0);
+      delay(300);
+      setRearLightsColor(255, 255, 255);
+      delay(300);
+      setRearLightsColor(0, 0, 0);
+      delay(300);
+      setRearLightsColor(255, 255, 255);
+    }
     /*
     tone(8, NOTE_D5, 100);
     delay(10);
@@ -401,9 +427,11 @@ void robotArmMoveUp()
     lcd.setCursor(0, 0);
     lcd.print("Arm up...");
     Serial.println("Moving arm up...");
-    pwm.setPWM(1, 0, 150); // go up
-    delay(400);
-    pwm.setPWM(2, 0, 500); // go up
+    pwm.setPWM(2, 0, 580);
+    delay(200);
+    pwm.setPWM(1, 0, 150);
+    delay(100);
+    pwm.setPWM(2, 0, 500);
 }
 
 void robotArmMoveDown()
@@ -412,9 +440,9 @@ void robotArmMoveDown()
     lcd.setCursor(0, 0);
     lcd.print("Arm down...");
     Serial.println("Moving arm down...");
-    pwm.setPWM(2, 0, 650); // go down
-    delay(50);
-    pwm.setPWM(1, 0, 345); // go down
+    pwm.setPWM(1, 0, 380);
+    delay(100);
+    pwm.setPWM(2, 0, 650);
 }
 
 void robotEndEffectorOpen()
@@ -459,12 +487,6 @@ void toggleRobotArm(){
         robotArmInitialization();
     }
     isArmResting = !isArmResting;
-}
-
-void setRearLightsColor(int redValue, int greenValue,  int blueValue) {
-  analogWrite(redPin, redValue);
-  analogWrite(greenPin,  greenValue);
-  analogWrite(bluePin, blueValue);
 }
 
 void robotStartUp()
