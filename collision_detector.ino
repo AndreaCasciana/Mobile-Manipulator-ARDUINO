@@ -10,140 +10,135 @@ void decodeIRSignal()
   switch (IrReceiver.decodedIRData.command)
   {
 
-  case 68: //rewind
-    robotArmTurnLeft();
-    break;
+    case REMOTE_REWIND:
+      robotArmTurnLeft();
+      break;
 
-  case 67: //fast forward
-    robotArmTurnRight();
-    break;
+    case REMOTE_FAST_FORWARD:
+      robotArmTurnRight();
+      break;
 
-  case 25: //EQ
-    pickAndMoveRight();
-    break;
+    case REMOTE_EQ:
+      pickAndMoveRight();
+      break;
 
-  case 70: //vol+
-    robotEndEffectorOpen();
-    break;
+    case REMOTE_VOL_UP:
+      robotEndEffectorOpen();
+      break;
 
-  case 21: //vol-
-    robotEndEffectorClose();
-    break;
+    case REMOTE_VOL_DOWN:
+      robotEndEffectorClose();
+      break;
 
-  case 22: //0
-    toggleRobotArm();
-    break;
+    case REMOTE_NUMPAD_0:
+      toggleRobotArm();
+      break;
 
-  case 13: //ST/REPT
-    robotEndEffectorRotate();
-    break;
+    case REMOTE_ST_REPT:
+      robotEndEffectorRotate();
+      break;
 
-  case 7: //arrow down
-    robotArmMoveDown();
-    break;
+    case REMOTE_ARROW_DOWN:
+      robotArmMoveDown();
+      break;
 
-  case 9: //arrow up
-    robotArmMoveUp();
-    break;
+    case REMOTE_ARROW_UP:
+      robotArmMoveUp();
+      break;
 
-  case 64: //pause
-    robotArmCenteredPosition();
-    break;
+    case REMOTE_PAUSE:
+      robotArmCenteredPosition();
+      break;
 
-  case 71: //func/stop
-    controlRobotLaser();
-    break;
+    case REMOTE_FUNC_STOP:
+      controlRobotLaser();
+      break;
 
-  case 69: //power
-    if (isArmOn)
-    {
-      robotArmDeactivation();
-      //robotMovementOn();
-    }
-    else
-    {
-      //robotMovementOff();
-      robotArmActivation();
-    }
-    break;
+    case REMOTE_POWER:
+      if (isArmOn)
+      {
+        robotArmDeactivation();
+      }
+      else
+      {
+        robotArmActivation();
+      }
+      break;
 
-  case 28: //5
-    robotMovementOff();
-    break;
+    case REMOTE_NUMPAD_5:
+      robotMovementOff();
+      break;
 
-  case 24: //2
-    robotMovementOn();
-    break;
+    case REMOTE_NUMPAD_2:
+      robotMovementOn();
+      break;
 
-  case 82: //8
-    robotMovementBackward();
-    break;
+    case REMOTE_NUMPAD_8:
+      robotMovementBackward();
+      break;
 
-  case 8: //4
-    robotMovementLeft();
-    break;
-  
-  case 90: //6
-    robotMovementRight();
-    break;
+    case REMOTE_NUMPAD_4:
+      robotMovementLeft();
+      break;
+    
+    case REMOTE_NUMPAD_6:
+      robotMovementRight();
+      break;
 
   default:
     break;
-   /* if (!isArmOn)
-    {
-      IrReceiver.stop();
-      IrReceiver.begin(29, ENABLE_LED_FEEDBACK);
-    }
-    else
-    {
-      break;
-    }*/
-  
   }
 }
 
 void loop()
 {
-
   if(Serial1.available()){
-    String received = Serial1.readString();
+    String received = Serial1.readStringUntil('\n');
     received.trim();
-    if(received == "laserToggle"){
+    if(received == ROBOT_LASER_TOGGLE){
         controlRobotLaser();
-    } else if (received == "o") {
+    } else if (received == ROBOT_CATERPILLAR_STOP) {
+        robotMovementOff();
+    } else if (received == ROBOT_END_EFFECTOR_OPEN) {
         robotEndEffectorOpen();
-    } else if (received == "c") {
+    } else if (received == ROBOT_END_EFFECTOR_CLOSE) {
         robotEndEffectorClose();
-    } else if (received == "rotateEndEffector") {
+    } else if (received == ROBOT_END_EFFECTOR_ROTATE) {
         robotEndEffectorRotate();
-    } else if (received == "armUp") {
+    } else if (received == ROBOT_ARM_MOVE_UP) {
         robotArmMoveUp();
-    } else if (received == "armDown") {
+    } else if (received == ROBOT_ARM_MOVE_DOWN) {
         robotArmMoveDown();
-    } else if (received == "armLeft") {
+    } else if (received == ROBOT_ARM_MOVE_LEFT) {
         robotArmTurnLeft();
-    } else if (received == "armRight") {
+    } else if (received == ROBOT_ARM_MOVE_RIGHT) {
         robotArmTurnRight();
-    } else if (received == "armCentered") {
+    } else if (received == ROBOT_ARM_CENTERED) {
         robotArmCenteredPosition();
-    } else if (received == "armResting") {
+    } else if (received == ROBOT_ARM_REST_TOGGLE) {
         toggleRobotArm();
-    } else if (received == "armDemoMode") {
+    } else if (received == ROBOT_ARM_DEMO) {
         pickAndMoveRight();
-    } else if (received == "armPowerToggle") {
+    } else if (received == ROBOT_ARM_POWER_TOGGLE) {
       if (isArmOn){
         robotArmDeactivation();
       } else {
         robotArmActivation();
       }
-    } else if (received.startsWith("rotateArm")) {
-        int angle = received.substring(10).toInt();
-        //robotArmTurn(angle);
-        robotArmGraduallyTurn(angle);
-    } else if (received.startsWith("moveArmVertically")) {
-        int value = received.substring(17).toInt();
-        Serial.println("Attempted to move the arm vertically using the slider");
-        //robotArmMoveVertically(angle);
+    } else if (received.startsWith(ROBOT_ARM_CUSTOM_HORIZONTAL_MOVEMENT)) {
+        int angle = received.substring(4, received.indexOf(' ')).toInt();
+        robotArmTurn(angle);
+    } else if (received.startsWith(ROBOT_ARM_CUSTOM_VERTICAL_MOVEMENT)) {
+        int angle = received.substring(4, received.indexOf(' ')).toInt();
+        robotArmMoveVertically(100-angle);
+    } else if (received == ROBOT_CATERPILLAR_MOVE_FORWARD) {
+        robotMovementOn();
+    } else if (received == ROBOT_CATERPILLAR_MOVE_BACKWARD) {
+        robotMovementBackward();
+    } else if (received == ROBOT_CATERPILLAR_MOVE_LEFT) {
+        robotMovementLeft();
+    } else if (received == ROBOT_CATERPILLAR_MOVE_RIGHT) {
+        robotMovementRight();
     }
   }
 
@@ -155,10 +150,7 @@ void loop()
 
   dist = sr04.Distance();
 
-  if (dist < 20){
-    Serial.print("OBSTACLE DETECTED! (");
-    Serial.print(dist);
-    Serial.println("cm)");
+  if (dist < COLLISION_DISTANCE){
     triggerAlarm(dist);
   }
 }
