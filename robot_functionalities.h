@@ -5,10 +5,8 @@
 #include <IRremote.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <LiquidCrystal.h>
-#define TRIG_PIN 12
-#define ECHO_PIN 11
-#define SERVOMIN 150
-#define SERVOMAX 600
+#include "robot_constants.h"
+
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 SR04 sr04 = SR04(ECHO_PIN, TRIG_PIN);
 long dist;
@@ -19,393 +17,292 @@ bool isEndEffectorRotated = false;
 int contrast = 80;
 LiquidCrystal lcd(13, 10, 5, 4, 3, 2);
 int servoSpeed = 1;
-int lowSpeed = 3; // Adjust for desired low speed
-int midSpeed = 2; // Adjust for desired mid speed
-int highSpeed = 1; // Adjust for desired high speed
-int servoPos0 = 370;
+int lowSpeed = 3;
+int midSpeed = 2;
+int highSpeed = 1;
+int servoPos0 = ANGLE_CENTER;
 int redPin= 53;
 int greenPin = 51;
 int bluePin = 49;
 bool stoppedFront = false;
 bool stoppedBack = false;
 
-void robotArmInitialization()
+void setRearLightsColor(int redValue, int greenValue,  int blueValue) 
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Initial position");
-    Serial.println("Initial position");
-    pwm.setPWM(0, 0, 370);
-    servoPos0 = 370;
-    delay(1000);
-    pwm.setPWM(2, 0, 500);
-    delay(50);
-    pwm.setPWM(1, 0, 150);
-    delay(50);
-    pwm.setPWM(3, 0, 420);
-    delay(500);
-    pwm.setPWM(4, 0, 100);
-    delay(500);
-    pwm.setPWM(5, 0, 200);
-}
-
-void setRearLightsColor(int redValue, int greenValue,  int blueValue) {
   analogWrite(redPin, redValue);
   analogWrite(greenPin,  greenValue);
   analogWrite(bluePin, blueValue);
 }
 
-void pickAndMoveRight()
+void lcdPrint(uint8_t line, String message)
+{
+  if(line == 0){
+    lcd.clear();
+  }
+  lcd.setCursor(0, line);
+  lcd.print(message);
+}
+
+void rotateRevoluteJoint(uint8_t joint, uint16_t angle)
+{
+  pwm.setPWM(joint, 0, angle);
+}
+
+void sendToESP32(String message)
+{
+  Serial.println(message);
+}
+
+void speakerBeep()
+{
+  tone(8, NOTE_D5, 100);
+  delay(10);
+  tone(8, NOTE_G5, 100);
+  delay(10);
+  tone(8, NOTE_F5, 100);
+  delay(10);
+  tone(8, NOTE_A5, 100);
+}
+
+void robotArmInitialization()
 {
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Robot arm demo...");
-    Serial.println("Robot arm demo...");
-    pwm.wakeup();
-    delay(100);
-    pwm.setPWM(0, 0, 370); // turn center
+    lcd.print("Initial position");
+    sendToESP32("Initial position");
+    rotateRevoluteJoint(ARM_BASE, ANGLE_CENTER);
+    servoPos0 = ANGLE_CENTER;
     delay(1000);
-    pwm.setPWM(5, 0, 100); // open end effector
-    delay(600);
-    pwm.setPWM(2, 0, 550); // go down
+    rotateRevoluteJoint(ARM_JOINT_2, 500);
     delay(50);
-    pwm.setPWM(1, 0, 295); // go down
-    delay(800);
-    pwm.setPWM(3, 0, 420); // go down
-    delay(100);
-    pwm.setPWM(5, 0, 280); // grab
+    rotateRevoluteJoint(ARM_JOINT_1, 150);
+    delay(50);
+    rotateRevoluteJoint(ARM_JOINT_3, 420);
     delay(500);
-    pwm.setPWM(1, 0, 150); // go up
-    delay(50);
-    pwm.setPWM(2, 0, 500); // go up
-    delay(2000);
-    pwm.setPWM(4, 0, 340);
-    delay(1000);
-    pwm.setPWM(0, 0, 100); // turn left
-    delay(1000);
-    pwm.setPWM(2, 0, 550); // go down
-    delay(800);
-    pwm.setPWM(1, 0, 300); // go down
-    delay(800);
-    pwm.setPWM(5, 0, 100); // open end effector
-    delay(1000);
-    pwm.setPWM(1, 0, 150); // go up
-    delay(800);
-    pwm.setPWM(2, 0, 480); // go up
-    delay(2000);
-    robotArmInitialization();
+    rotateRevoluteJoint(ARM_JOINT_4, 100);
+    delay(500);
+    rotateRevoluteJoint(ARM_EOAT, 200);
 }
 
 void robotMovementOn()
 {
     if(!stoppedFront){
       stoppedBack = false;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Robot moving...");
-      analogWrite(52, 130);
-      analogWrite(42, 180);
-      digitalWrite(50, LOW);
-      digitalWrite(48, HIGH);
-      digitalWrite(46, LOW);
-      digitalWrite(44, HIGH);
+      lcdPrint(0, "Robot moving...");
+      digitalWrite(CATERPILLAR_LEFT, 130);
+      digitalWrite(CATERPILLAR_RIGHT, 180);
+      digitalWrite(CATERPILLAR_LEFT_BACKWARD, LOW);
+      digitalWrite(CATERPILLAR_LEFT_FORWARD, HIGH);
+      digitalWrite(CATERPILLAR_RIGHT_BACKWARD, LOW);
+      digitalWrite(CATERPILLAR_RIGHT_FORWARD, HIGH);
       setRearLightsColor(255, 0, 0);
     }
 }
 
 void robotMovementRight()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Robot moving...");
-    analogWrite(52, 255);
-    analogWrite(42, 255);
-    digitalWrite(50, LOW);
-    digitalWrite(48, HIGH);
-    digitalWrite(46, HIGH);
-    digitalWrite(44, LOW);
+    stoppedFront = false;
+    lcdPrint(0, "Robot moving...");
+    digitalWrite(CATERPILLAR_LEFT, 255);
+    digitalWrite(CATERPILLAR_RIGHT, 255);
+    digitalWrite(CATERPILLAR_LEFT_BACKWARD, LOW);
+    digitalWrite(CATERPILLAR_LEFT_FORWARD, HIGH);
+    digitalWrite(CATERPILLAR_RIGHT_BACKWARD, HIGH);
+    digitalWrite(CATERPILLAR_RIGHT_FORWARD, LOW);
 }
 
 void robotMovementLeft()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Robot moving...");
-    analogWrite(52, 255);
-    analogWrite(42, 255);
-    digitalWrite(50, HIGH);
-    digitalWrite(48, LOW);
-    digitalWrite(46, LOW);
-    digitalWrite(44, HIGH);
+    stoppedFront = false;
+    lcdPrint(0, "Robot moving...");
+    digitalWrite(CATERPILLAR_LEFT, 255);
+    digitalWrite(CATERPILLAR_RIGHT, 255);
+    digitalWrite(CATERPILLAR_LEFT_BACKWARD, HIGH);
+    digitalWrite(CATERPILLAR_LEFT_FORWARD, LOW);
+    digitalWrite(CATERPILLAR_RIGHT_BACKWARD, LOW);
+    digitalWrite(CATERPILLAR_RIGHT_FORWARD, HIGH);
 }
 
 void robotMovementBackward()
 {
     if(!stoppedBack){
       stoppedFront = false;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Backward moving...");
-      analogWrite(52, 180);
-      analogWrite(42, 130);
-      digitalWrite(50, HIGH);
-      digitalWrite(48, LOW);
-      digitalWrite(46, HIGH);
-      digitalWrite(44, LOW);
+      lcdPrint(0, "Robot moving...");
+      digitalWrite(CATERPILLAR_LEFT, 180);
+      digitalWrite(CATERPILLAR_RIGHT, 130);
+      digitalWrite(CATERPILLAR_LEFT_BACKWARD, HIGH);
+      digitalWrite(CATERPILLAR_LEFT_FORWARD, LOW);
+      digitalWrite(CATERPILLAR_RIGHT_BACKWARD, HIGH);
+      digitalWrite(CATERPILLAR_RIGHT_FORWARD, LOW);
       setRearLightsColor(244, 255, 168);
     }
 }
 
 void robotMovementOff()
 {
-    analogWrite(52, 0);
-    analogWrite(42, 0);
+    digitalWrite(CATERPILLAR_LEFT, 0);
+    digitalWrite(CATERPILLAR_RIGHT, 0);
     setRearLightsColor(0, 0, 255);
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Robot stopped...");
+    lcdPrint(0, "Robot stopped...");
 }
 
 void robotArmActivation()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Arm activation...");
-    Serial.println("Arm activation...");
+    lcdPrint(0, "Arm activation...");
+    sendToESP32("Arm activation...");
     pwm.wakeup();
     delay(100);
-    pwm.setPWM(0, 0, 370);
-    servoPos0 = 370;
+    rotateRevoluteJoint(ARM_BASE, ANGLE_CENTER);
+    servoPos0 = ANGLE_CENTER;
     delay(1000);
-    pwm.setPWM(2, 0, 500);
+    rotateRevoluteJoint(ARM_JOINT_2, 500);
     delay(50);
-    pwm.setPWM(1, 0, 150);
+    rotateRevoluteJoint(ARM_JOINT_1, 150);
     delay(50);
-    pwm.setPWM(3, 0, 420);
+    rotateRevoluteJoint(ARM_JOINT_3, 420);
     delay(500);
-    pwm.setPWM(4, 0, 100);
+    rotateRevoluteJoint(ARM_JOINT_4, GRIPPER_HORIZONTAL);
     delay(500);
-    pwm.setPWM(5, 0, 100);
+    rotateRevoluteJoint(ARM_EOAT, GRIPPER_OPEN);
     delay(800);
-    digitalWrite(33, HIGH);
+    digitalWrite(LASER_PIN, HIGH);
     isArmOn = true;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Arm activated!");
-    Serial.println("Arm activated...");
+    lcdPrint(0, "Arm activated...");
+    sendToESP32("Arm activated...");
 }
 
 void robotArmDeactivation()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Arm deactivation...");
-    Serial.println("Arm deactivation...");
-    pwm.setPWM(0, 0, 370);
-    servoPos0 = 370;
+    lcdPrint(0, "Arm deactivation...");
+    sendToESP32("Arm deactivation...");
+    rotateRevoluteJoint(ARM_BASE, ANGLE_CENTER);
+    servoPos0 = ANGLE_CENTER;
     delay(800);
-    pwm.setPWM(4, 0, 340);
+    rotateRevoluteJoint(ARM_JOINT_4, GRIPPER_VERTICAL);
     delay(1000);
-    pwm.setPWM(1, 0, 90);
+    rotateRevoluteJoint(ARM_JOINT_1, 90);
     delay(50);
-    pwm.setPWM(2, 0, 550);
+    rotateRevoluteJoint(ARM_JOINT_2, 550);
     delay(50);
-    pwm.setPWM(3, 0, 650);
+    rotateRevoluteJoint(ARM_JOINT_3, 650);
     delay(200);
     pwm.sleep();
-    digitalWrite(33, LOW);
+    digitalWrite(LASER_PIN, LOW);
     isArmOn = false;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Arm deactivated!");
-    Serial.println("Arm deactivated...");
+    lcdPrint(0, "Arm deactivated...");
+    sendToESP32("Arm deactivated...");
 }
 
-void robotArmRestPosition(){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Arm resting...");
-    Serial.println("Arm resting...");
-    pwm.setPWM(0, 0, 370);
-    servoPos0 = 370;
-    delay(800);
-    pwm.setPWM(4, 0, 340);
-    delay(1000);
-    pwm.setPWM(1, 0, 90);
-    delay(50);
-    pwm.setPWM(2, 0, 550);
-    delay(50);
-    pwm.setPWM(3, 0, 650);
-}
-
-void robotArmTurnLeft()
+void robotArmRestPosition()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Moving arm...");
-    Serial.println("Moving arm to the left...");
-    for (servoPos0; servoPos0 >= 100; servoPos0 -= servoSpeed) {
-      pwm.setPWM(0, 0, servoPos0);
-      delay(1); // Adjust delay for desired speed
-    }
+    lcdPrint(0, "Arm resting...");
+    sendToESP32("Arm resting...");
+    rotateRevoluteJoint(ARM_BASE, ANGLE_CENTER);
+    servoPos0 = ANGLE_CENTER;
+    delay(800);
+    rotateRevoluteJoint(ARM_JOINT_4, GRIPPER_VERTICAL);
+    delay(1000);
+    rotateRevoluteJoint(ARM_JOINT_1, 90);
+    delay(50);
+    rotateRevoluteJoint(ARM_JOINT_2, 550);
+    delay(50);
+    rotateRevoluteJoint(ARM_JOINT_3, 650);
 }
 
 void robotArmTurn(int angle)
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Moving arm...");
+    lcdPrint(0, "Moving arm...");
     Serial.print("Rotating arm to pos=");
-    Serial.println(angle);
+    sendToESP32(String(angle));
     if(angle > servoPos0) {
       for (servoPos0; servoPos0 <= angle; servoPos0 += servoSpeed) {
-        pwm.setPWM(0, 0, servoPos0);
-        delay(1); // Adjust delay for desired speed
+        rotateRevoluteJoint(ARM_BASE, servoPos0);
+        delay(1);
       }
     } else{
       for (servoPos0; servoPos0 >= angle; servoPos0 -= servoSpeed) {
-        pwm.setPWM(0, 0, servoPos0);
-        delay(1); // Adjust delay for desired speed
+        rotateRevoluteJoint(ARM_BASE, servoPos0);
+        delay(1);
       }
     }    
 
-    Serial.println("Arm rotated to desired position");
-    //pwm.setPWM(0, 0, angle);
+    sendToESP32("Arm rotated to desired position");
 }
 
-void robotArmGraduallyTurn(int angle) {
-  int totalMovement = abs(angle - servoPos0); // Total range of movement
-  
-  // Handle small movements directly
-  if (totalMovement < 5) {
-    servoPos0 = angle;
-    pwm.setPWM(0, 0, servoPos0);
-    return;
-  }
-
-  // Speed ranges
-  int accelerationRange = totalMovement * 0.10; // First 10% for acceleration
-  int decelerationRange = totalMovement * 0.10; // Last 10% for deceleration
-  int highSpeedRange = totalMovement * 0.20;    // Middle 20% for high speed
-  int constantRange = totalMovement - (accelerationRange + decelerationRange + highSpeedRange);
-
-  // Determine movement direction (1 for forward, -1 for backward)
-  int direction = (servoPos0 < angle) ? 1 : -1;
-
-  // Accelerating phase
-  for (int i = 0; i < accelerationRange; i++) {
-    servoPos0 += direction; // Increment/decrement position
-    pwm.setPWM(0, 0, servoPos0);
-    delay(lowSpeed);
-  }
-
-  // High-speed phase
-  for (int i = 0; i < highSpeedRange; i++) {
-    servoPos0 += direction; // Increment/decrement position
-    pwm.setPWM(0, 0, servoPos0);
-    delay(highSpeed);
-  }
-
-  // Constant speed phase
-  for (int i = 0; i < constantRange; i++) {
-    servoPos0 += direction; // Increment/decrement position
-    pwm.setPWM(0, 0, servoPos0);
-    delay(midSpeed);
-  }
-
-  // Decelerating phase
-  for (int i = 0; i < decelerationRange; i++) {
-    servoPos0 += direction; // Increment/decrement position
-    pwm.setPWM(0, 0, servoPos0);
-    delay(lowSpeed);
-  }
-
-  // Ensure the final position is accurate
-  servoPos0 = angle;
-  pwm.setPWM(0, 0, servoPos0);
+void robotArmTurnLeft()
+{
+    lcdPrint(0, "Moving arm...");
+    sendToESP32("Moving arm to the left...");
+    for (servoPos0; servoPos0 >= ANGLE_LEFT; servoPos0 -= servoSpeed) {
+      rotateRevoluteJoint(ARM_BASE, servoPos0);
+      delay(1);
+    }
 }
 
 
 void robotArmTurnRight()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Moving arm...");
-    Serial.println("Moving arm to the right...");
-    for (servoPos0; servoPos0 <= 600; servoPos0 += servoSpeed) {
-      pwm.setPWM(0, 0, servoPos0);
-      delay(1); // Adjust delay for desired speed
+    lcdPrint(0, "Moving arm...");
+    sendToESP32("Moving arm to the right...");
+    for (servoPos0; servoPos0 <= ANGLE_RIGHT; servoPos0 += servoSpeed) {
+      rotateRevoluteJoint(ARM_BASE, servoPos0);
+      delay(1);
     }
 }
 
 void robotArmCenteredPosition()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Centering arm...");
-    Serial.println("Centering arm...");
-    if(370 > servoPos0) {
-      for (servoPos0; servoPos0 <= 370; servoPos0 += servoSpeed) {
-        pwm.setPWM(0, 0, servoPos0);
-        delay(1); // Adjust delay for desired speed
+    lcdPrint(0, "Moving arm...");
+    sendToESP32("Centering arm...");
+    if(ANGLE_CENTER > servoPos0) {
+      for (servoPos0; servoPos0 <= ANGLE_CENTER; servoPos0 += servoSpeed) {
+        rotateRevoluteJoint(ARM_BASE, servoPos0);
+        delay(1);
       }
     } else{
-      for (servoPos0; servoPos0 >= 370; servoPos0 -= servoSpeed) {
-        pwm.setPWM(0, 0, servoPos0);
-        delay(1); // Adjust delay for desired speed
+      for (servoPos0; servoPos0 >= ANGLE_CENTER; servoPos0 -= servoSpeed) {
+        rotateRevoluteJoint(ARM_BASE, servoPos0);
+        delay(1);
       }
     }
 }
 
 void triggerAlarm(int dist)
 {
-
     if(!stoppedFront){
       stoppedFront = true;
       robotMovementOff();
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("WARNING!");
-      lcd.setCursor(0, 1);
-      lcd.print("OBJECT DETECTED");
+      lcdPrint(0, "WARNING!");
+      lcdPrint(1, "OBJECT DETECTED");
       setRearLightsColor(255, 255, 255);
+      speakerBeep();
       delay(300);
       setRearLightsColor(0, 0, 0);
       delay(300);
       setRearLightsColor(255, 255, 255);
+      speakerBeep();
       delay(300);
       setRearLightsColor(0, 0, 0);
       delay(300);
       setRearLightsColor(255, 255, 255);
+      speakerBeep();
     }
-    /*
-    tone(8, NOTE_D5, 100);
-    delay(10);
-    tone(8, NOTE_G5, 100);
-    delay(10);
-    tone(8, NOTE_F5, 100);
-    delay(10);
-    tone(8, NOTE_A5, 100);
-    */
+
     delay(10);
 }
 
 void turnLaserOn()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Laser on!");
-    Serial.println("Turning laser on...");
-    digitalWrite(33, HIGH);
+    lcdPrint(0, "Laser on!");
+    sendToESP32("Turning laser on...");
+    digitalWrite(LASER_PIN, HIGH);
 }
 
 void turnLaserOff()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Laser off!");
-    Serial.println("Turning laser off...");
-    digitalWrite(33, LOW);
+    lcdPrint(0, "Laser off!");
+    sendToESP32("Turning laser off...");
+    digitalWrite(LASER_PIN, LOW);
 }
 
 void controlRobotLaser()
@@ -423,64 +320,84 @@ void controlRobotLaser()
 
 void robotArmMoveUp()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Arm up...");
-    Serial.println("Moving arm up...");
-    pwm.setPWM(2, 0, 580);
+    lcdPrint(0, "Arm up...");
+    sendToESP32("Moving arm up...");
+    rotateRevoluteJoint(ARM_JOINT_2, 580);
     delay(200);
-    pwm.setPWM(1, 0, 150);
+    rotateRevoluteJoint(ARM_JOINT_1, 150);
     delay(100);
-    pwm.setPWM(2, 0, 500);
+    rotateRevoluteJoint(ARM_JOINT_2, 500);
 }
 
 void robotArmMoveDown()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Arm down...");
-    Serial.println("Moving arm down...");
-    pwm.setPWM(1, 0, 380);
+    lcdPrint(0, "Arm down...");
+    sendToESP32("Moving arm down...");
+    rotateRevoluteJoint(ARM_JOINT_1, 380);
     delay(100);
-    pwm.setPWM(2, 0, 650);
+    rotateRevoluteJoint(ARM_JOINT_2, 650);
 }
 
 void robotEndEffectorOpen()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Opening EOAT...");
-    Serial.println("Opening end effector...");
-    pwm.setPWM(5, 0, 100); // open end effector
+    lcdPrint(0, "Opening EOAT...");
+    sendToESP32("Opening end effector...");
+    rotateRevoluteJoint(ARM_EOAT, GRIPPER_OPEN);
 }
 
 void robotEndEffectorClose()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Closing EOAT...");
-    Serial.println("Closing end effector...");
-    pwm.setPWM(5, 0, 250); // grab
+    lcdPrint(0, "Closing EOAT...");
+    sendToESP32("Closing end effector...");
+    rotateRevoluteJoint(ARM_EOAT, GRIPPER_CLOSED);
 }
 
 void robotEndEffectorRotate()
 {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Rotating EOAT...");
-    Serial.println("Rotating end effector...");
+    lcdPrint(0, "Rotating EOAT...");
+    sendToESP32("Rotating end effector...");
     if (!isEndEffectorRotated)
     {
-        pwm.setPWM(4, 0, 340);
+        rotateRevoluteJoint(ARM_JOINT_4, GRIPPER_VERTICAL);
     }
     else
     {
-        pwm.setPWM(4, 0, 100);
+        rotateRevoluteJoint(ARM_JOINT_4, GRIPPER_HORIZONTAL);
     }
     isEndEffectorRotated = !isEndEffectorRotated;
 }
 
-void toggleRobotArm(){
+void pickAndMoveRight()
+{
+    lcdPrint(0, "Robot arm demo...");
+    sendToESP32("Robot arm demo...");
+    pwm.wakeup();
+    delay(100);
+    robotArmCenteredPosition();
+    delay(1000);
+    robotEndEffectorOpen();
+    delay(600);
+    robotArmMoveDown();
+    delay(100);
+    robotEndEffectorClose();
+    delay(500);
+    robotArmMoveUp();
+    delay(2000);
+    robotEndEffectorRotate();
+    delay(1000);
+    robotArmTurnLeft();
+    delay(1000);
+    robotArmMoveDown();
+    delay(800);
+    robotEndEffectorOpen();
+    delay(1000);
+    robotArmMoveUp();
+    delay(2000);
+    robotArmInitialization();
+}
+
+void toggleRobotArm()
+{
     if(!isArmResting){
         robotArmRestPosition();
     }else{
@@ -494,35 +411,31 @@ void robotStartUp()
     Serial1.begin(4800);
     Serial1.setTimeout(5);
     Serial.begin(9600);
-    pinMode(33, OUTPUT);
+    pinMode(LASER_PIN, OUTPUT);
     analogWrite(6, contrast);
     lcd.begin(16, 2);
     IrReceiver.begin(29);
     pwm.begin();
     pwm.setPWMFreq(60);
-    pinMode(50, OUTPUT);
-    pinMode(48, OUTPUT);
-    pinMode(46, OUTPUT);
-    pinMode(44, OUTPUT);
-    pinMode(52, OUTPUT);
-    pinMode(42, OUTPUT);
+    pinMode(CATERPILLAR_LEFT_BACKWARD, OUTPUT);
+    pinMode(CATERPILLAR_LEFT_FORWARD, OUTPUT);
+    pinMode(CATERPILLAR_RIGHT_BACKWARD, OUTPUT);
+    pinMode(CATERPILLAR_RIGHT_FORWARD, OUTPUT);
+    pinMode(CATERPILLAR_LEFT, OUTPUT);
+    pinMode(CATERPILLAR_RIGHT, OUTPUT);
     pinMode(redPin,  OUTPUT);              
     pinMode(greenPin, OUTPUT);
     pinMode(bluePin, OUTPUT);
-    digitalWrite(50, LOW);
-    digitalWrite(48, LOW);
-    digitalWrite(46, LOW);
-    digitalWrite(44, LOW);
-    analogWrite(52, 0);
-    analogWrite(42, 0);
+    digitalWrite(CATERPILLAR_LEFT_BACKWARD, LOW);
+    digitalWrite(CATERPILLAR_LEFT_FORWARD, LOW);
+    digitalWrite(CATERPILLAR_RIGHT_BACKWARD, LOW);
+    digitalWrite(CATERPILLAR_RIGHT_FORWARD, LOW);
+    digitalWrite(CATERPILLAR_LEFT, 0);
+    digitalWrite(CATERPILLAR_RIGHT, 0);
     robotArmActivation();
-    lcd.clear();
     turnLaserOn();
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("ARDM2 ROBOT");
-    lcd.setCursor(0, 2);
-    lcd.print("IS OPERATIONAL.");
+    lcdPrint(0, "ARDM2 ROBOT");
+    lcdPrint(1, "IS OPERATIONAL.");
     setRearLightsColor(0, 0, 255);
-    Serial.println("Robot fully operational...");
+    sendToESP32("Robot fully operational...");
 }
