@@ -229,6 +229,16 @@ void robotArmTurn(int angle)
     sendToESP32("Arm rotated to desired position");
 }
 
+void robotArmMoveVertically(int angle)
+{
+  int pwm1 = map(angle, 0, 100, ANGLE_JOINT_1_UP, ANGLE_JOINT_1_DOWN);
+  int pwm2 = map(angle, 0, 100, ANGLE_JOINT_2_UP, ANGLE_JOINT_2_DOWN);
+  sendToESP32("Rotating arm vertically to servo1 pos=" + String(pwm1) + " and servo2 pos=" + String(pwm2));
+  rotateRevoluteJoint(ARM_JOINT_1, pwm1);
+  delay(100);
+  rotateRevoluteJoint(ARM_JOINT_2, pwm2);
+}
+
 void robotArmTurnLeft()
 {
     lcdPrint(0, "Moving arm...");
@@ -324,18 +334,18 @@ void robotArmMoveUp()
     sendToESP32("Moving arm up...");
     rotateRevoluteJoint(ARM_JOINT_2, 580);
     delay(200);
-    rotateRevoluteJoint(ARM_JOINT_1, 150);
+    rotateRevoluteJoint(ARM_JOINT_1, ANGLE_JOINT_1_UP);
     delay(100);
-    rotateRevoluteJoint(ARM_JOINT_2, 500);
+    rotateRevoluteJoint(ARM_JOINT_2, ANGLE_JOINT_2_UP);
 }
 
 void robotArmMoveDown()
 {
     lcdPrint(0, "Arm down...");
     sendToESP32("Moving arm down...");
-    rotateRevoluteJoint(ARM_JOINT_1, 380);
+    rotateRevoluteJoint(ARM_JOINT_1, ANGLE_JOINT_1_DOWN);
     delay(100);
-    rotateRevoluteJoint(ARM_JOINT_2, 650);
+    rotateRevoluteJoint(ARM_JOINT_2, ANGLE_JOINT_2_DOWN);
 }
 
 void robotEndEffectorOpen()

@@ -129,9 +129,8 @@ void loop()
         int angle = received.substring(4, received.indexOf(' ')).toInt();
         robotArmTurn(angle);
     } else if (received.startsWith(ROBOT_ARM_CUSTOM_VERTICAL_MOVEMENT)) {
-        int value = received.substring(4, received.indexOf(' ')).toInt();
-        sendToESP32("Attempted to move the arm vertically using the slider");
-        //robotArmMoveVertically(angle);
+        int angle = received.substring(4, received.indexOf(' ')).toInt();
+        robotArmMoveVertically(100-angle);
     } else if (received == ROBOT_CATERPILLAR_MOVE_FORWARD) {
         robotMovementOn();
     } else if (received == ROBOT_CATERPILLAR_MOVE_BACKWARD) {
